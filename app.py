@@ -1,23 +1,40 @@
+import os
+from flask import Flask, request, jsonify
 import joblib
 
-def load_model(path="model/sentiment_model.joblib"):
-    """Loads the model from a file."""
-    return joblib.load(path)
+# Initialize the Flask application
+app = Flask(__name__)
 
-def predict_sentiment(text, model):
-    """Makes a sentiment prediction (dummy)."""
-    if not isinstance(text, str) or not text.strip():
-        return "Invalid Input"
+# Load the model when the app first starts
+model_path = os.path.join('model', 'sentiment_model.joblib')
+model = joblib.load(model_path)
 
-    # The actual prediction logic would be here.
-    # For this demo, we'll keep it simple.
-    return "positive" if "good" in text.lower() else "negative"
+@app.route('/')
+def home():
+    return "Sentiment analysis API is running!"
 
-if __name__ == "__main__":
-    # This part is for local testing only.
+@app.route('/predict', methods=['POST'])
+def predict():
+    """Receives text data and returns a sentiment prediction."""
     try:
-        model = load_model()
-        prediction = predict_sentiment("This is a very good day.", model)
-        print(f"Sentiment prediction: {prediction}")
-    except FileNotFoundError:
-        print("Model not found. Ensure the file 'model/sentiment_model.joblib' exists.")
+        # Get the JSON data from the request
+        data = request.get_json(force=True)
+        text = data['text']
+
+        if not isinstance(text, str) or not text.strip():
+            return jsonify({'error': 'Invalid input text'}), 400
+
+        # Make a prediction using the loaded model
+        # (Using simple logic for this demo)
+        prediction = "positive" if "good" in text.lower() else "negative"
+        
+        # Return the prediction result in JSON format
+        return jsonify({'text': text, 'sentiment': prediction})
+
+    except Exception as e:
+        # Return an error message if something goes wrong
+        return jsonify({'error': str(e)}), 500
+
+if __name__ == '__main__':
+    # Run the built-in Flask server for local development (not for production)
+    app.run(host='0.0.0.0', port=8080, debug=True)
